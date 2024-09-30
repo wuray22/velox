@@ -557,6 +557,46 @@ TEST_F(PlanNodeSerdeTest, topNRowNumber) {
   testSerde(plan);
 }
 
+TEST_F(PlanNodeSerdeTest, topNRank) {
+  auto plan = PlanBuilder()
+                  .values({data_})
+                  .topNRank({}, {"c0", "c2"}, 10, false)
+                  .planNode();
+  testSerde(plan);
+
+  plan = PlanBuilder()
+             .values({data_})
+             .topNRank({}, {"c0", "c2"}, 10, true)
+             .planNode();
+  testSerde(plan);
+
+  plan = PlanBuilder()
+             .values({data_})
+             .topNRank({"c0"}, {"c1", "c2"}, 10, false)
+             .planNode();
+  testSerde(plan);
+}
+
+TEST_F(PlanNodeSerdeTest, topNDemseRank) {
+  auto plan = PlanBuilder()
+                  .values({data_})
+                  .topNDenseRank({}, {"c0", "c2"}, 10, false)
+                  .planNode();
+  testSerde(plan);
+
+  plan = PlanBuilder()
+             .values({data_})
+             .topNDenseRank({}, {"c0", "c2"}, 10, true)
+             .planNode();
+  testSerde(plan);
+
+  plan = PlanBuilder()
+             .values({data_})
+             .topNDenseRank({"c0"}, {"c1", "c2"}, 10, false)
+             .planNode();
+  testSerde(plan);
+}
+
 TEST_F(PlanNodeSerdeTest, write) {
   auto rowTypePtr = ROW({"c0", "c1", "c2"}, {BIGINT(), BOOLEAN(), VARBINARY()});
   auto planBuilder =
