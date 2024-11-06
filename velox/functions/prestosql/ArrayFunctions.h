@@ -21,6 +21,8 @@
 #include "velox/expression/PrestoCastHooks.h"
 #include "velox/functions/Udf.h"
 #include "velox/functions/lib/CheckedArithmetic.h"
+#include "velox/functions/prestosql/json/SIMDJsonUtil.h"
+#include "velox/functions/prestosql/types/JsonType.h"
 #include "velox/type/Conversions.h"
 #include "velox/type/FloatingPointUtil.h"
 
@@ -208,15 +210,42 @@ struct ArrayJoinFunction {
   }
 
   template <typename C>
-  void writeOutput(
-      out_type<velox::Varchar>& result,
-      const arg_type<velox::Varchar>& delim,
-      const C& value,
-      bool& firstNonNull) {
+  typename std::
+      enable_if_t<!std::is_same_v<C, facebook::velox::StringView>, void>
+      writeOutput(
+          out_type<velox::Varchar>& result,
+          const arg_type<velox::Varchar>& delim,
+          const C& value,
+          bool& firstNonNull) {
     if (!firstNonNull) {
       writeValue(result, delim);
     }
     writeValue(result, value);
+    firstNonNull = false;
+  }
+
+  template <typename C>
+  typename std::
+      enable_if_t<std::is_same_v<C, facebook::velox::StringView>, void>
+      writeOutput(
+          out_type<velox::Varchar>& result,
+          const arg_type<velox::Varchar>& delim,
+          const C& value,
+          bool& firstNonNull) {
+    if (!firstNonNull) {
+      writeValue(result, delim);
+    }
+    // if value is a json, need to remove leading and trailing "s
+    if (isJsonType(arrayElementType_)) {
+      std::string str = value.getString();
+      if (str.size() >= 2 && str.at(0) == '"' &&
+          str.at(str.size() - 1) == '"') {
+        str = str.substr(1, str.size() - 2);
+      }
+      writeValue(result, str);
+    } else {
+      writeValue(result, value);
+    }
     firstNonNull = false;
   }
 
