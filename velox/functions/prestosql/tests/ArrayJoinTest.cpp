@@ -190,5 +190,66 @@ TEST_F(ArrayJoinTest, jsonTest) {
   input = {std::nullopt, std::nullopt};
   testArrayJoinNoReplacement<StringView>(input, ", ", "", false, true);
   testArrayJoinReplacement<StringView>(input, ", ", "0", "0, 0", false, true);
+
+  // JSON strings with special characters
+  input = {
+    R"({"key": "value\with\backslash"})",
+    std::nullopt,
+    R"('value\with\backslash')",
+  };
+  testArrayJoinNoReplacement<StringView>(
+     input, ", ", R"({"key": "value\with\backslash"}, 'value\with\backslash')", false, true);
+  testArrayJoinReplacement<StringView>(
+      input, ", ", "0", R"({"key": "value\with\backslash"}, 0, 'value\with\backslash')", false, true);
+
+  input = {
+    R"({"key": "value\nwith\nnewline"})",
+    std::nullopt,
+    R"("value\nwith\nnewline")",
+  };
+  testArrayJoinNoReplacement<StringView>(
+     input, ", ", R"({"key": "value\nwith\nnewline"}, value\nwith\nnewline)", false, true);
+  testArrayJoinReplacement<StringView>(
+      input, ", ", "0", R"({"key": "value\nwith\nnewline"}, 0, value\nwith\nnewline)", false, true);
+
+  input = {
+    R"({"key": "value with \u00A9 and \u20AC"})",
+    std::nullopt,
+    R"("value with \u00A9 and \u20AC")",
+  };
+  testArrayJoinNoReplacement<StringView>(
+     input, ", ", R"({"key": "value with \u00A9 and \u20AC"}, value with \u00A9 and \u20AC)", false, true);
+  testArrayJoinReplacement<StringView>(
+      input, ", ", "0", R"({"key": "value with \u00A9 and \u20AC"}, 0, value with \u00A9 and \u20AC)", false, true);
+
+  input = {
+    R"({"key": "!@#$%^&*()_+-={}:<>?,./~`"})",
+    std::nullopt,
+    R"("!@#$%^&*()_+-={}:<>?,./~`")",
+  };
+  testArrayJoinNoReplacement<StringView>(
+     input, ", ", R"({"key": "!@#$%^&*()_+-={}:<>?,./~`"}, !@#$%^&*()_+-={}:<>?,./~`)", false, true);
+  testArrayJoinReplacement<StringView>(
+      input, ", ", "0", R"({"key": "!@#$%^&*()_+-={}:<>?,./~`"}, 0, !@#$%^&*()_+-={}:<>?,./~`)", false, true);
+
+/*
+
+Test Case 2: JSON string with single quotes
+R"({'key': 'value'})"
+
+Test Case 3: JSON string with backslash
+R"({"key": "value\with\backslash"})" - even java doesnt allow this
+
+Test Case 4: JSON string with newline character
+R"({"key": "value\nwith\nnewline"})" - java prints with the actual new lines while cpp just prints out the \n
+
+Test Case 7: JSON string with Unicode characters
+R"({"key": "value with \u00A9 and \u20AC"})" - works well
+
+Test Case 8: JSON string with special characters
+R"({"key": "!@#$%^&*()_+-={}:<>?,./~`"})" -- also good
+
+
+*/
 }
 } // namespace
